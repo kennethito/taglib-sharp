@@ -153,11 +153,16 @@ namespace TagLib.Mpeg {
 		///    Contains the associated Xing header.
 		/// </summary>
 		private XingHeader xing_header;
-		
-		/// <summary>
-		///    Contains the associated VBRI header.
+
+        /// <summary>
+		///    Contains the associated Xing header.
 		/// </summary>
-		private VBRIHeader vbri_header;
+		private XingHeader info_header;
+
+        /// <summary>
+        ///    Contains the associated VBRI header.
+        /// </summary>
+        private VBRIHeader vbri_header;
 		
 		/// <summary>
 		///    Contains the audio stream duration.
@@ -175,7 +180,7 @@ namespace TagLib.Mpeg {
 		/// </summary>
 		public static readonly AudioHeader Unknown =
 			new AudioHeader (0, 0, XingHeader.Unknown,
-				VBRIHeader.Unknown);
+				VBRIHeader.Unknown, XingHeader.Unknown);
 		
 		#endregion
 		
@@ -206,12 +211,14 @@ namespace TagLib.Mpeg {
 		/// </param>
 		private AudioHeader (uint flags, long streamLength,
 		                     XingHeader xingHeader,
-		                     VBRIHeader vbriHeader)
+		                     VBRIHeader vbriHeader,
+                             XingHeader infoHeader)
 		{
 			this.flags = flags;
 			this.stream_length = streamLength;
 			this.xing_header = xingHeader;
 			this.vbri_header = vbriHeader;
+            this.info_header = infoHeader;
 			this.duration = TimeSpan.Zero;
 		}
 		
@@ -254,6 +261,8 @@ namespace TagLib.Mpeg {
 			xing_header = XingHeader.Unknown;
 			
 			vbri_header = VBRIHeader.Unknown;
+
+            info_header = XingHeader.Unknown;
 			
 			// Check for a Xing header that will help us in
 			// gathering information about a VBR stream.
@@ -261,13 +270,25 @@ namespace TagLib.Mpeg {
 				Version, ChannelMode));
 				
 			ByteVector xing_data = file.ReadBlock (16);
-			if (xing_data.Count == 16 && xing_data.StartsWith (
-				XingHeader.FileIdentifier))
-				xing_header = new XingHeader (xing_data);
+            if (xing_data.Count == 16)
+            {
+                if (xing_data.StartsWith(XingHeader.XingFileIdentifier))
+                {
+                    xing_header = new XingHeader(xing_data);
 
-			if (xing_header.Present)
-				return;
-			
+                    if (xing_header.Present)
+                        return;
+                }
+
+                if (xing_data.StartsWith(XingHeader.InfoFileIdentifier))
+                {
+                    info_header = new XingHeader(xing_data);
+
+                    if (info_header.Present)
+                        return;
+                }
+            } 
+				
 			// A Xing header could not be found, next chec for a
 			// Fraunhofer VBRI header.
 			file.Seek (position + VBRIHeader.VBRIHeaderOffset ());
@@ -622,26 +643,41 @@ namespace TagLib.Mpeg {
 		public VBRIHeader VBRIHeader {
 			get {return vbri_header;}
 		}
-		#endregion
-		
-		
-		
-		#region Public Methods
-		
-		/// <summary>
-		///    Sets the length of the audio stream represented by the
-		///    current instance.
-		/// </summary>
-		/// <param name="streamLength">
-		///    A <see cref="long" /> value specifying the length in
-		///    bytes of the audio stream represented by the current
-		///    instance.
-		/// </param>
-		/// <remarks>
-		///    The this value has been set, <see cref="Duration" /> will
-		///    return an incorrect value.
-		/// </remarks>
-		public void SetStreamLength (long streamLength)
+
+        /// <summary>
+        ///    Gets the Info (Xing) header found in the audio represented by
+        ///    the current instance.
+        /// </summary>
+        /// <value>
+        ///    A <see cref="XingHeader" /> object containing the Xing
+        ///    header found in the audio represented by the current
+        ///    instance, or <see cref="XingHeader.Unknown" /> if no
+        ///    header was found.
+        /// </value>
+        public XingHeader InfoHeader
+        {
+            get { return info_header; }
+        }
+        #endregion
+
+
+
+        #region Public Methods
+
+        /// <summary>
+        ///    Sets the length of the audio stream represented by the
+        ///    current instance.
+        /// </summary>
+        /// <param name="streamLength">
+        ///    A <see cref="long" /> value specifying the length in
+        ///    bytes of the audio stream represented by the current
+        ///    instance.
+        /// </param>
+        /// <remarks>
+        ///    The this value has been set, <see cref="Duration" /> will
+        ///    return an incorrect value.
+        /// </remarks>
+        public void SetStreamLength (long streamLength)
 		{
 			this.stream_length = streamLength;
 			

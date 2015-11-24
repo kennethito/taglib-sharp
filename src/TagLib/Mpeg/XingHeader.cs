@@ -65,12 +65,29 @@ namespace TagLib.Mpeg {
 		/// <value>
 		///    "Xing"
 		/// </value>
+        [Obsolete("Use the XingFileIdentifier")]
 		public static readonly ReadOnlyByteVector FileIdentifier = "Xing";
-		
-		/// <summary>
-		///    An empty and unset Xing header.
-		/// </summary>
-		public static readonly XingHeader Unknown = new XingHeader (0, 0);
+
+        /// <summary>
+        ///    Contains te Xing identifier.
+        /// </summary>
+        /// <value>
+        ///    "Xing"
+        /// </value>
+        public static readonly ReadOnlyByteVector InfoFileIdentifier = "Info";
+
+        /// <summary>
+        ///    Contains te Xing identifier.
+        /// </summary>
+        /// <value>
+        ///    "Xing"
+        /// </value>
+        public static readonly ReadOnlyByteVector XingFileIdentifier = "Xing";
+
+        /// <summary>
+        ///    An empty and unset Xing header.
+        /// </summary>
+        public static readonly XingHeader Unknown = new XingHeader (0, 0);
 		
 		#endregion
 		
@@ -119,7 +136,7 @@ namespace TagLib.Mpeg {
 				throw new ArgumentNullException ("data");
 			
 			// Check to see if a valid Xing header is available.
-			if (!data.StartsWith (FileIdentifier))
+			if (!data.StartsWith (XingFileIdentifier) && !data.StartsWith(InfoFileIdentifier))
 				throw new CorruptFileException (
 					"Not a valid Xing header");
 			
